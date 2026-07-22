@@ -14,12 +14,12 @@ Sources is region-agnostic. New data source = new `SourceAdapter` subclass;
 never edit the pipeline to add a source. See `docs/architecture.md`.
 
 ## Where things live
-- `src/pricesniper/models.py` — `Listing`, `Deal`, enums. The shared vocabulary.
-- `src/pricesniper/sources/base.py` — the `SourceAdapter` interface.
-- `src/pricesniper/sources/` — one file per real source (plus `demo.py`).
-- `src/pricesniper/matching.py` — group by identity (EAN/UPC/MPN).
-- `src/pricesniper/valuation.py` — reference price, gap, priority.
-- `docs/adr/` — one Markdown file per significant decision.
+- `src/pricesniper/models.py`: `Listing`, `Deal`, enums. The shared vocabulary.
+- `src/pricesniper/sources/base.py`: the `SourceAdapter` interface.
+- `src/pricesniper/sources/`: one file per real source (plus `demo.py`).
+- `src/pricesniper/matching.py`: group by identity (EAN/UPC/MPN).
+- `src/pricesniper/valuation.py`: reference price, gap, priority.
+- `docs/adr/`: one Markdown file per significant decision.
 
 ## Conventions
 - **Python** managed by **uv**. `uv sync` to set up, `uv run pricesniper` to run,
@@ -40,5 +40,5 @@ never edit the pipeline to add a source. See `docs/architecture.md`.
   feeds/APIs, and rate-limit politely.
 
 ## Current status
-`v0.1` — pipeline runs on the `demo` source. Next up: first real EU adapter
+`v0.1`: pipeline runs on the `demo` source. Next up: first real EU adapter
 (`v0.2`). See `ROADMAP.md`.

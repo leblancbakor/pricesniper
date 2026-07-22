@@ -1,4 +1,4 @@
-# NNNN — Short title of the decision
+# NNNN: Short title of the decision
 
 - **Status:** proposed | accepted | superseded by [NNNN](NNNN-...)
 - **Date:** YYYY-MM-DD
@@ -12,7 +12,7 @@ The choice, stated plainly. "We will ..."
 
 ## Consequences
 What becomes easier, and what becomes harder or is now ruled out? Include the
-trade-offs you knowingly accepted — the honest downsides, not just the upsides.
+trade-offs you knowingly accepted: the honest downsides, not just the upsides.
 
 ## Alternatives considered
 The other options you weighed, and why they lost.

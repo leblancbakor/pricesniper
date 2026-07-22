@@ -1,4 +1,4 @@
-# 0001 — Pluggable source adapters
+# 0001: Pluggable source adapters
 
 - **Status:** accepted
 - **Date:** 2026-07-01
@@ -11,7 +11,7 @@ details (HTML structure, currency quirks, a particular API's JSON) leak into the
 deal-detection logic, so that every new source or region forces edits across the
 whole codebase.
 
-We also want this to read as a well-engineered project, not a script — the
+We also want this to read as a well-engineered project, not a script, so the
 architecture is part of the deliverable.
 
 ## Decision
@@ -30,7 +30,7 @@ first-class field on `Listing` from day one.
 
 **Harder / accepted trade-offs**
 - Every source must fully normalize to `Listing` up front, including currency and
-  identity extraction — more work per adapter than a quick one-off scrape.
+  identity extraction, which is more work per adapter than a quick one-off scrape.
 - A shared model means a schema change ripples to all adapters. This is the point
   (one clear contract), but it is a real cost when the model evolves.
 

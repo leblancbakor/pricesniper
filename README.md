@@ -2,7 +2,7 @@
 
 A cross-platform tech-deal detector. It watches retailers for **price gaps** and
 **markdowns** on barcoded tech (Apple gear, GPUs, RAM kits, peripherals), scores
-how good each opportunity is, and — later — alerts you on Discord.
+how good each opportunity is, and, later, alerts you on Discord.
 
 > **Status:** `v0.1` · early, active development. This is a learning + portfolio
 > project built in the open. Every significant decision is written up as an
@@ -26,7 +26,7 @@ flowchart LR
 ```
 
 Everything from **Normalize** onward is region-agnostic. Going from EU to US
-means writing new **Source** adapters — not rewriting the pipeline. That single
+means writing new **Source** adapters, not rewriting the pipeline. That single
 design choice is the backbone of the project; see
 [ADR-0001](docs/adr/0001-pluggable-source-adapters.md).
 
@@ -34,7 +34,7 @@ design choice is the backbone of the project; see
 
 This project is managed with [uv](https://docs.astral.sh/uv/) (think `npm`, but
 for Python). No global Python setup or manual virtual-environment juggling
-needed — uv handles it.
+needed, since uv handles it.
 
 ```bash
 # 1. Install uv (see the uv site for your OS one-liner), then:
@@ -61,25 +61,25 @@ Run the tests with `uv run pytest`.
 ```
 src/pricesniper/
   models.py          # the shared data model: Listing, Deal, enums
-  matching.py        # stage 2 — group listings by barcode/identity
-  valuation.py       # stages 3 & 4 — reference price, gap, priority score
+  matching.py        # stage 2: group listings by barcode/identity
+  valuation.py       # stages 3 & 4: reference price, gap, priority score
   sources/
-    base.py          # SourceAdapter — the interface every source implements
+    base.py          # SourceAdapter: the interface every source implements
     demo.py          # a fake source so it runs with zero setup
   __main__.py        # entry point wiring the pipeline together
 tests/               # pytest sanity checks
 docs/
   architecture.md    # the deeper "how it fits together" write-up
-  adr/               # Architecture Decision Records — the "why" behind choices
+  adr/               # Architecture Decision Records: the "why" behind choices
 ```
 
 ## Tech choices (short version)
 
-- **Python** — scraping, bots, and data pipelines are its home turf.
-- **Pydantic** — runtime-validated models, so bad data fails loudly and early.
-- **httpx + selectolax** — HTTP client and fast HTML parser for real adapters.
-- **uv** — fast, npm-like project + dependency management.
-- **ruff + pytest** — linting/formatting and tests.
+- **Python**: scraping, bots, and data pipelines are its home turf.
+- **Pydantic**: runtime-validated models, so bad data fails loudly and early.
+- **httpx + selectolax**: HTTP client and fast HTML parser for real adapters.
+- **uv**: fast, npm-like project and dependency management.
+- **ruff + pytest**: linting, formatting, and tests.
 
 The reasoning behind each is recorded in [docs/adr/](docs/adr/).
 
@@ -92,7 +92,7 @@ Built to move cleanly between Windows and macOS/Linux:
 - File paths use `pathlib` (never hand-built strings), so separators are correct
   on every OS.
 - The virtual environment (`.venv/`) is gitignored and rebuilt per machine with
-  `uv sync` — the same pattern as not committing `node_modules`.
+  `uv sync`, the same pattern as not committing `node_modules`.
 
 ## Scope & ethics
 
