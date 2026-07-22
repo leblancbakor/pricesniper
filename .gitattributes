@@ -1,0 +1,9 @@
+# Normalise line endings so switching between Windows and macOS/Linux does not
+# rewrite every file. Everything checks out with LF; Git handles it transparently.
+* text=auto eol=lf
+
+# Treat these as binary (never touch their bytes).
+*.png binary
+*.jpg binary
+*.webp binary
+*.db binary

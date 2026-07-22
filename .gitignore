@@ -1,0 +1,30 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# --- Virtual environment (Python's node_modules — rebuilt per machine) ---
+.venv/
+venv/
+
+# --- uv ---
+# NOTE: uv.lock is NOT ignored — commit it so environments are reproducible.
+
+# --- Secrets / local config ---
+.env
+*.local
+
+# --- Data / scratch ---
+*.db
+*.sqlite3
+data/
+
+# --- OS noise ---
+.DS_Store
+Thumbs.db
+
+# --- Editors ---
+.vscode/
+.idea/
