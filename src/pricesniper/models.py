@@ -58,7 +58,7 @@ class Listing(BaseModel):
     (ean/upc/mpn): matching is only trustworthy when at least one is present,
     which is exactly why we start with barcoded tech.
 
-    Money is stored as ``Decimal``, never ``float`` — floats can't represent
+    Money is stored as ``Decimal``, never ``float``, because floats can't represent
     values like 0.10 exactly, and rounding errors on prices are unacceptable.
     """
 

@@ -1,7 +1,7 @@
 """The extensibility seam of the whole project.
 
-Every data source — a scrapeable clearance page, a Google Shopping feed, an
-official API — is a subclass of ``SourceAdapter`` that implements exactly one
+Every data source (a scrapeable clearance page, a Google Shopping feed, an
+official API) is a subclass of ``SourceAdapter`` that implements exactly one
 method: ``fetch()``, returning a list of normalized ``Listing`` objects.
 
 Because everything downstream depends only on ``Listing`` (never on *how* it was
@@ -33,6 +33,6 @@ class SourceAdapter(ABC):
         """Return the current listings from this source.
 
         Implementations should return normalized ``Listing`` objects and must
-        not raise on an empty result — return an empty list instead.
+        not raise on an empty result; return an empty list instead.
         """
         raise NotImplementedError

@@ -2,8 +2,8 @@
 
 Two independent price signals feed the "reference price" we compare against:
 
-  1. Markdown       — the listing itself shows a higher ``was_price`` (clearance).
-  2. Cross-listing  — other sellers list the same item (by identity) for more.
+  1. Markdown:      the listing itself shows a higher ``was_price`` (clearance).
+  2. Cross-listing: other sellers list the same item (by identity) for more.
 
 We take whichever signal implies the *larger* gap, and record which one it was
 so the alert can explain itself. The thresholds here are first-pass guesses;

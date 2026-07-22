@@ -4,7 +4,7 @@ Run with::
 
     uv run pytest
 
-These are intentionally small — they exist to prove the core loop behaves and to
+These are intentionally small; they exist to prove the core loop behaves and to
 give you a green baseline to build on. Real tests come as real adapters land.
 """
 

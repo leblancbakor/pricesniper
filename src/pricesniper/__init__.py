@@ -1,4 +1,4 @@
-"""PriceSniper — a cross-platform tech-deal detector.
+"""PriceSniper, a cross-platform tech-deal detector.
 
 Public surface kept small on purpose; import from the submodules directly.
 """

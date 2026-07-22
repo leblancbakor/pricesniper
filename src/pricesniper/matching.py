@@ -24,6 +24,6 @@ def group_by_identity(listings: list[Listing]) -> dict[str, list[Listing]]:
     for listing in listings:
         key = listing.identity
         if key is None:
-            continue  # unmatchable for now — see module docstring
+            continue  # unmatchable for now; see module docstring
         groups[key].append(listing)
     return dict(groups)

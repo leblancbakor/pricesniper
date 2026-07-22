@@ -1,6 +1,6 @@
 """A fake source so the pipeline runs with zero setup and shows results today.
 
-Delete or ignore this once real adapters exist — it's here purely so
+Delete or ignore this once real adapters exist; it's here purely so
 ``uv run pricesniper`` produces meaningful output on a fresh clone. The data is
 invented but shaped exactly like what a real EU tech adapter would return.
 
