@@ -16,8 +16,10 @@ from __future__ import annotations
 
 import asyncio
 
+from . import __version__
 from .models import Deal
-from .sources.demo import DemoSource
+from .sources.feed import FeedSource
+from .sources.samples import SAMPLE_FEED_PATH, SAMPLE_FIELD_MAP
 from .valuation import find_deals
 
 _BADGES = {"major": "[MAJOR]", "solid": "[SOLID]", "minor": "[minor]"}
@@ -39,12 +41,19 @@ def _format_deal(index: int, deal: Deal) -> str:
 
 
 async def _run() -> None:
-    source = DemoSource()
+    # Point this at a real feed URL (and the matching field map) to go live.
+    # For now it reads the bundled sample feed so it runs with zero setup.
+    source = FeedSource(
+        SAMPLE_FEED_PATH,
+        SAMPLE_FIELD_MAP,
+        name="alternate-sample",
+        seller="Alternate.nl",
+    )
     listings = await source.fetch()
     deals = find_deals(listings)
 
     print(
-        f"\nPriceSniper v0.1 - scanned {len(listings)} listings "
+        f"\nPriceSniper v{__version__} - scanned {len(listings)} listings "
         f"from '{source.name}' ({source.region.value})"
     )
     print(f"Found {len(deals)} deal(s):\n")

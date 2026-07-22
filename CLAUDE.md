@@ -17,6 +17,7 @@ never edit the pipeline to add a source. See `docs/architecture.md`.
 - `src/pricesniper/models.py`: `Listing`, `Deal`, enums. The shared vocabulary.
 - `src/pricesniper/sources/base.py`: the `SourceAdapter` interface.
 - `src/pricesniper/sources/`: one file per real source (plus `demo.py`).
+- `src/pricesniper/sources/feed.py`: `FeedSource` + `FeedFieldMap` for product feeds.
 - `src/pricesniper/matching.py`: group by identity (EAN/UPC/MPN).
 - `src/pricesniper/valuation.py`: reference price, gap, priority.
 - `docs/adr/`: one Markdown file per significant decision.
@@ -40,5 +41,6 @@ never edit the pipeline to add a source. See `docs/architecture.md`.
   feeds/APIs, and rate-limit politely.
 
 ## Current status
-`v0.1`: pipeline runs on the `demo` source. Next up: first real EU adapter
-(`v0.2`). See `ROADMAP.md`.
+`v0.2`: pipeline runs on `FeedSource` against a bundled sample feed. Next up:
+point it at a live affiliate feed, then `v0.3` (SQLite persistence + Discord).
+See `ROADMAP.md`.

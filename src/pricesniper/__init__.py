@@ -3,4 +3,4 @@
 Public surface kept small on purpose; import from the submodules directly.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

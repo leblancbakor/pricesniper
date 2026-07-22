@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A stand-in for a real retailer product feed. It is shaped exactly like feeds
+  from networks such as Daisycon or TradeTracker: flat <product> elements, EU
+  comma decimals (e.g. "1.299,00"), an EAN barcode, and an original "price_old".
+  Swap this file for a real feed URL and the FeedSource parses it the same way.
+-->
+<feed>
+  <product>
+    <name>Apple MacBook Air 13-inch M4 256GB</name>
+    <brand>Apple</brand>
+    <category>Laptop</category>
+    <ean>0195949999123</ean>
+    <price>1.049,00</price>
+    <price_old>1.299,00</price_old>
+    <currency>EUR</currency>
+    <url>https://www.alternate.nl/product/macbook-air-13-m4-256</url>
+    <image>https://www.alternate.nl/pix/macbook-air-m4.jpg</image>
+    <stock>in_stock</stock>
+    <condition>new</condition>
+  </product>
+
+  <product>
+    <name>Corsair Vengeance 32GB (2x16GB) DDR5-6000 CL30</name>
+    <brand>Corsair</brand>
+    <category>RAM</category>
+    <ean>0840006687894</ean>
+    <price>129,00</price>
+    <price_old>189,00</price_old>
+    <currency>EUR</currency>
+    <url>https://www.alternate.nl/product/corsair-vengeance-ddr5-6000</url>
+    <image>https://www.alternate.nl/pix/corsair-ddr5.jpg</image>
+    <stock>op voorraad</stock>
+    <condition>new</condition>
+  </product>
+
+  <product>
+    <name>Samsung 990 Pro 2TB NVMe SSD</name>
+    <brand>Samsung</brand>
+    <category>Storage</category>
+    <ean>8806094900393</ean>
+    <price>159,00</price>
+    <price_old>209,00</price_old>
+    <currency>EUR</currency>
+    <url>https://www.alternate.nl/product/samsung-990-pro-2tb</url>
+    <image>https://www.alternate.nl/pix/samsung-990-pro.jpg</image>
+    <stock>in_stock</stock>
+    <condition>new</condition>
+  </product>
+
+  <product>
+    <name>ASUS TUF Gaming GeForce RTX 5070 Ti 16GB</name>
+    <brand>ASUS</brand>
+    <category>GPU</category>
+    <ean>4711387451236</ean>
+    <price>749,00</price>
+    <price_old>899,00</price_old>
+    <currency>EUR</currency>
+    <url>https://www.alternate.nl/product/asus-tuf-rtx-5070-ti</url>
+    <image>https://www.alternate.nl/pix/asus-rtx-5070-ti.jpg</image>
+    <stock>in_stock</stock>
+    <condition>new</condition>
+  </product>
+
+  <product>
+    <name>Logitech MX Master 3S Wireless Mouse</name>
+    <brand>Logitech</brand>
+    <category>Peripheral</category>
+    <ean>0097855172698</ean>
+    <price>89,00</price>
+    <currency>EUR</currency>
+    <url>https://www.alternate.nl/product/logitech-mx-master-3s</url>
+    <image>https://www.alternate.nl/pix/logitech-mx-master-3s.jpg</image>
+    <stock>in_stock</stock>
+    <condition>new</condition>
+  </product>
+</feed>

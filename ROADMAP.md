@@ -9,10 +9,15 @@ involved a real decision.
 - Matching + valuation + scoring.
 - Runnable end to end: `uv run pricesniper` prints deals. Tests green.
 
-### `v0.2`: first real EU source
-- Replace `demo` with one real adapter (a retailer with visible original + sale
-  prices, or a Google Shopping feed). Handle currency and messy real-world data.
-- ADR: how the first source was chosen (feed vs scrape, and why).
+### `v0.2`: first real EU source  ✅
+- `FeedSource`: a generic product-feed adapter driven by a `FeedFieldMap`, so one
+  class parses many feed layouts by configuration. Handles EU comma decimals,
+  optional was-prices, stock, and the EAN the matcher needs.
+- Runs on a bundled sample feed today; a real feed URL is a one-line swap.
+- [ADR-0002](docs/adr/0002-first-source-feed-over-scrape.md): why a feed beat
+  scraping the outlet pages (JavaScript rendering, `robots.txt`, missing EANs).
+- Next: sign up with an affiliate network (Daisycon / TradeTracker / Awin) and
+  point `FeedSource` at a live feed.
 
 ### `v0.3`: persistence and Discord alerts
 - SQLite store (via SQLAlchemy) for seen-listing dedupe **and** price history.

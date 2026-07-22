@@ -13,3 +13,4 @@ Use [`template.md`](template.md) to start a new one.
 
 ## Index
 - [0001: Pluggable source adapters](0001-pluggable-source-adapters.md)
+- [0002: Start with a product feed, not a scraper](0002-first-source-feed-over-scrape.md)
