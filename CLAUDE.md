@@ -20,6 +20,8 @@ never edit the pipeline to add a source. See `docs/architecture.md`.
 - `src/pricesniper/sources/feed.py`: `FeedSource` + `FeedFieldMap` for product feeds.
 - `src/pricesniper/matching.py`: group by identity (EAN/UPC/MPN).
 - `src/pricesniper/valuation.py`: reference price, gap, priority.
+- `src/pricesniper/storage.py`: `Store` interface + `SQLiteStore` (history + dedupe).
+- `src/pricesniper/alerting.py`: `Alerter` interface + `ConsoleAlerter`, `DiscordAlerter`.
 - `docs/adr/`: one Markdown file per significant decision.
 
 ## Conventions
@@ -41,6 +43,6 @@ never edit the pipeline to add a source. See `docs/architecture.md`.
   feeds/APIs, and rate-limit politely.
 
 ## Current status
-`v0.2`: pipeline runs on `FeedSource` against a bundled sample feed. Next up:
-point it at a live affiliate feed, then `v0.3` (SQLite persistence + Discord).
-See `ROADMAP.md`.
+`v0.3` complete: persistence (`SQLiteStore`) + Discord alerts (`DiscordAlerter`).
+`uv run pricesniper --alert discord` posts to Discord (needs `.env`). Next: `v0.4`
+(a second EU source). See `ROADMAP.md`.

@@ -1,46 +1,45 @@
-"""Runnable entry point for the v0.1 demo pipeline.
+"""Runnable entry point for the pipeline.
 
-    uv run pricesniper
-    # or, equivalently:
-    uv run python -m pricesniper
+    uv run pricesniper                 # scan + print deals to the console
+    uv run pricesniper --alert discord # scan + post new deals to Discord
 
-It wires the whole loop together against fake data so you can see the pipeline
-work end to end before any real scraping exists::
+The loop::
 
-    source.fetch()  ->  find_deals()  ->  print
+    source.fetch() -> find_deals() -> record history + skip seen -> alert
 
-Swap ``DemoSource`` for a real adapter and nothing else here has to change.
+Every scanned price is written to the local SQLite store, and only deals we have
+not alerted on before are sent, so running it twice does not repeat itself.
+Discord settings are read from a local ``.env`` (see ``.env.example``).
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
+import os
+
+from dotenv import load_dotenv
 
 from . import __version__
-from .models import Deal
+from .alerting import Alerter, ConsoleAlerter, DiscordAlerter
 from .sources.feed import FeedSource
 from .sources.samples import SAMPLE_FEED_PATH, SAMPLE_FIELD_MAP
+from .storage import SQLiteStore
 from .valuation import find_deals
 
-_BADGES = {"major": "[MAJOR]", "solid": "[SOLID]", "minor": "[minor]"}
+
+def _make_alerter(kind: str) -> Alerter:
+    """Pick an alerter. Discord config is read from .env."""
+    if kind == "discord":
+        load_dotenv()  # read .env into the environment
+        return DiscordAlerter(
+            bot_token=os.getenv("DISCORD_BOT_TOKEN", ""),
+            channel_id=os.getenv("DISCORD_CHANNEL_ID", ""),
+        )
+    return ConsoleAlerter()
 
 
-def _format_deal(index: int, deal: Deal) -> str:
-    item = deal.listing
-    pct = round(deal.gap_pct * 100)
-    badge = _BADGES[deal.priority.value]
-    return "\n".join(
-        [
-            f"{index}. {badge}  {item.title}",
-            f"    {item.currency} {item.price}  (ref {item.currency} "
-            f"{deal.reference_price})  ->  save {item.currency} {deal.gap_abs} / {pct}%",
-            f"    {deal.reason} - {item.seller} - {item.region.value}",
-            f"    {item.url}",
-        ]
-    )
-
-
-async def _run() -> None:
+async def _run(alert_kind: str) -> None:
     # Point this at a real feed URL (and the matching field map) to go live.
     # For now it reads the bundled sample feed so it runs with zero setup.
     source = FeedSource(
@@ -49,22 +48,52 @@ async def _run() -> None:
         name="alternate-sample",
         seller="Alternate.nl",
     )
+    store = SQLiteStore()
+    alerter = _make_alerter(alert_kind)
+
     listings = await source.fetch()
     deals = find_deals(listings)
+
+    # Record every observed price so history builds up over time.
+    for listing in listings:
+        store.record_price(listing)
+
+    # Only surface deals we have not already alerted on.
+    new_deals = [deal for deal in deals if store.is_new_deal(deal)]
 
     print(
         f"\nPriceSniper v{__version__} - scanned {len(listings)} listings "
         f"from '{source.name}' ({source.region.value})"
     )
-    print(f"Found {len(deals)} deal(s):\n")
-    for i, deal in enumerate(deals, start=1):
-        print(_format_deal(i, deal))
-        print()
+    print(
+        f"Found {len(deals)} deal(s), {len(new_deals)} new "
+        f"({len(deals) - len(new_deals)} already alerted). "
+        f"Alerting via {alert_kind}.\n"
+    )
+    for deal in new_deals:
+        await alerter.send(deal)
+        store.mark_alerted(deal)
+
+    store.close()
 
 
 def main() -> None:
     """Sync wrapper so it works as a console-script entry point."""
-    asyncio.run(_run())
+    parser = argparse.ArgumentParser(
+        prog="pricesniper", description="Find and alert tech deals."
+    )
+    parser.add_argument(
+        "--alert",
+        choices=["console", "discord"],
+        default="console",
+        help="where to send new deals (default: console)",
+    )
+    args = parser.parse_args()
+    try:
+        asyncio.run(_run(args.alert))
+    except ValueError as exc:
+        # e.g. --alert discord without the token/channel configured.
+        raise SystemExit(f"Configuration error: {exc}") from None
 
 
 if __name__ == "__main__":

@@ -19,9 +19,16 @@ involved a real decision.
 - Next: sign up with an affiliate network (Daisycon / TradeTracker / Awin) and
   point `FeedSource` at a live feed.
 
-### `v0.3`: persistence and Discord alerts
-- SQLite store (via SQLAlchemy) for seen-listing dedupe **and** price history.
-- Discord bot posts deal embeds: title (linked), image, price math, priority.
+### `v0.3`: persistence and Discord alerts  ✅
+- **Persistence** ✅: `Store` interface + `SQLiteStore` (stdlib `sqlite3`) for
+  price history **and** deal dedupe. Running twice no longer repeats alerts.
+  [ADR-0003](docs/adr/0003-sqlite-behind-a-store-interface.md) covers the choice
+  (sqlite3 behind an interface, SQLAlchemy deferred).
+- **Discord alerter** ✅: `DiscordAlerter` posts deal embeds (linked title,
+  image, price math, priority colour) via Discord's REST API, gated by the store
+  so each deal fires once. `Alerter` interface keeps Telegram etc. pluggable.
+  [ADR-0004](docs/adr/0004-discord-via-rest-not-a-gateway-bot.md).
+- Run it live: `uv run pricesniper --alert discord` (needs `.env`).
 
 ### `v0.4`: a second EU source
 - Add a second adapter. This is where the pluggable design pays off, proof the
