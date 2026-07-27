@@ -1,0 +1,9 @@
+# PriceSniper watchlist: one EAN / GTIN (barcode) per line.
+# Lines starting with # are ignored. These are the products the eBay source
+# searches for. Add the barcodes of items you want to track.
+
+0840006687894   # Corsair Vengeance 32GB DDR5-6000 CL30
+4711387451236   # ASUS TUF Gaming GeForce RTX 5070 Ti 16GB
+8806094900393   # Samsung 990 Pro 2TB NVMe SSD
+0195949999123   # Apple MacBook Air 13-inch M4 256GB
+0097855172698   # Logitech MX Master 3S

@@ -22,10 +22,34 @@ from dotenv import load_dotenv
 
 from . import __version__
 from .alerting import Alerter, ConsoleAlerter, DiscordAlerter
+from .sources.base import SourceAdapter
+from .sources.ebay import EbaySource, read_watchlist
 from .sources.feed import FeedSource
 from .sources.samples import SAMPLE_FEED_PATH, SAMPLE_FIELD_MAP
 from .storage import SQLiteStore
 from .valuation import find_deals
+
+WATCHLIST_PATH = "watchlist.txt"
+
+
+def _make_source(kind: str) -> SourceAdapter:
+    """Build the chosen data source. eBay reads credentials from .env."""
+    if kind == "ebay":
+        load_dotenv()
+        return EbaySource(
+            client_id=os.getenv("EBAY_CLIENT_ID", ""),
+            client_secret=os.getenv("EBAY_CLIENT_SECRET", ""),
+            watchlist=read_watchlist(WATCHLIST_PATH),
+            marketplace=os.getenv("EBAY_MARKETPLACE", "EBAY_NL"),
+            environment=os.getenv("EBAY_ENV", "production"),
+        )
+    # Default: the bundled sample feed (swap the path for a real feed URL).
+    return FeedSource(
+        SAMPLE_FEED_PATH,
+        SAMPLE_FIELD_MAP,
+        name="alternate-sample",
+        seller="Alternate.nl",
+    )
 
 
 def _make_alerter(kind: str) -> Alerter:
@@ -39,15 +63,8 @@ def _make_alerter(kind: str) -> Alerter:
     return ConsoleAlerter()
 
 
-async def _run(alert_kind: str) -> None:
-    # Point this at a real feed URL (and the matching field map) to go live.
-    # For now it reads the bundled sample feed so it runs with zero setup.
-    source = FeedSource(
-        SAMPLE_FEED_PATH,
-        SAMPLE_FIELD_MAP,
-        name="alternate-sample",
-        seller="Alternate.nl",
-    )
+async def _run(alert_kind: str, source_kind: str) -> None:
+    source = _make_source(source_kind)
     store = SQLiteStore()
     alerter = _make_alerter(alert_kind)
 
@@ -83,6 +100,12 @@ def main() -> None:
         prog="pricesniper", description="Find and alert tech deals."
     )
     parser.add_argument(
+        "--source",
+        choices=["feed", "ebay"],
+        default="feed",
+        help="where to pull listings from (default: feed, the bundled sample)",
+    )
+    parser.add_argument(
         "--alert",
         choices=["console", "discord"],
         default="console",
@@ -90,9 +113,9 @@ def main() -> None:
     )
     args = parser.parse_args()
     try:
-        asyncio.run(_run(args.alert))
+        asyncio.run(_run(args.alert, args.source))
     except ValueError as exc:
-        # e.g. --alert discord without the token/channel configured.
+        # e.g. --alert discord or --source ebay without the config in .env.
         raise SystemExit(f"Configuration error: {exc}") from None
 
 

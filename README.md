@@ -63,15 +63,28 @@ src/pricesniper/
   models.py          # the shared data model: Listing, Deal, enums
   matching.py        # stage 2: group listings by barcode/identity
   valuation.py       # stages 3 & 4: reference price, gap, priority score
+  storage.py         # price history + deal dedupe (SQLiteStore)
+  alerting.py        # ConsoleAlerter + DiscordAlerter
   sources/
     base.py          # SourceAdapter: the interface every source implements
-    demo.py          # a fake source so it runs with zero setup
+    feed.py          # FeedSource: parse a retailer product feed (default)
+    ebay.py          # EbaySource: live cross-seller listings via eBay's API
+    demo.py          # a fake source used in early tests
   __main__.py        # entry point wiring the pipeline together
-tests/               # pytest sanity checks
+watchlist.txt        # the EANs the eBay source searches for
+tests/               # pytest suite
 docs/
   architecture.md    # the deeper "how it fits together" write-up
   adr/               # Architecture Decision Records: the "why" behind choices
 ```
+
+Pick a source and where alerts go, for example::
+
+    uv run pricesniper                          # sample feed -> console
+    uv run pricesniper --source ebay --alert discord   # live eBay -> Discord
+
+The `ebay` source and `discord` alerts read credentials from a local `.env`
+(see `.env.example`).
 
 ## Tech choices (short version)
 

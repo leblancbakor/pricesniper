@@ -30,9 +30,15 @@ involved a real decision.
   [ADR-0004](docs/adr/0004-discord-via-rest-not-a-gateway-bot.md).
 - Run it live: `uv run pricesniper --alert discord` (needs `.env`).
 
-### `v0.4`: a second EU source
-- Add a second adapter. This is where the pluggable design pays off, proof the
-  seam works. Great ADR material.
+### `v0.4`: a second EU source  ✅
+- `EbaySource`: pulls live listings from eBay's Browse API by GTIN, giving real
+  cross-seller arbitrage (the same barcode across many sellers). Selected with
+  `--source ebay`; searches the EANs in `watchlist.txt`.
+- Slotted in with zero changes to matching, valuation, storage, or alerting:
+  proof the `SourceAdapter` seam from ADR-0001 works.
+  [ADR-0005](docs/adr/0005-ebay-browse-api-for-arbitrage.md).
+- Go live: join the eBay Developers Program (free), put the app key/secret in
+  `.env`, then `uv run pricesniper --source ebay --alert discord`.
 
 ### `v0.5`: thesis and context field
 - Optional short "why this matters" blurb per deal (e.g. the RAM/AI supply

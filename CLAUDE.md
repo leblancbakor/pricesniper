@@ -18,6 +18,7 @@ never edit the pipeline to add a source. See `docs/architecture.md`.
 - `src/pricesniper/sources/base.py`: the `SourceAdapter` interface.
 - `src/pricesniper/sources/`: one file per real source (plus `demo.py`).
 - `src/pricesniper/sources/feed.py`: `FeedSource` + `FeedFieldMap` for product feeds.
+- `src/pricesniper/sources/ebay.py`: `EbaySource` (Browse API, GTIN search).
 - `src/pricesniper/matching.py`: group by identity (EAN/UPC/MPN).
 - `src/pricesniper/valuation.py`: reference price, gap, priority.
 - `src/pricesniper/storage.py`: `Store` interface + `SQLiteStore` (history + dedupe).
@@ -43,6 +44,6 @@ never edit the pipeline to add a source. See `docs/architecture.md`.
   feeds/APIs, and rate-limit politely.
 
 ## Current status
-`v0.3` complete: persistence (`SQLiteStore`) + Discord alerts (`DiscordAlerter`).
-`uv run pricesniper --alert discord` posts to Discord (needs `.env`). Next: `v0.4`
-(a second EU source). See `ROADMAP.md`.
+`v0.4` complete: second source `EbaySource` (Browse API, GTIN search) alongside
+`FeedSource`. Run `--source ebay` / `--alert discord` (both need `.env`). Sources,
+storage, and alerting are all pluggable interfaces now. See `ROADMAP.md`.
