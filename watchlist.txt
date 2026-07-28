@@ -1,9 +1,26 @@
-# PriceSniper watchlist: one EAN / GTIN (barcode) per line.
-# Lines starting with # are ignored. These are the products the eBay source
-# searches for. Add the barcodes of items you want to track.
+# PriceSniper watchlist: one entry per line. Lines starting with # are ignored.
+#
+# Two kinds of entry are supported:
+#   * a barcode  (all digits, 8 to 14) -> searched by GTIN, precise
+#   * a keyword phrase (has letters)   -> searched by text, broad coverage
+#
+# Barcodes are exact but many eBay sellers do not fill them in, so keyword
+# phrases usually return far more listings. Use whichever fits, or both.
+# Tip: search several markets at once, e.g. EBAY_MARKETPLACE=EBAY_DE,EBAY_NL.
+# eBay.de has much more tech stock, and the same barcode priced differently
+# across markets becomes a cross-market deal.
 
-0840006687894   # Corsair Vengeance 32GB DDR5-6000 CL30
-4711387451236   # ASUS TUF Gaming GeForce RTX 5070 Ti 16GB
-8806094900393   # Samsung 990 Pro 2TB NVMe SSD
-0195949999123   # Apple MacBook Air 13-inch M4 256GB
-0097855172698   # Logitech MX Master 3S
+# --- high-demand DDR5 memory (the 2026 AI-driven squeeze) ---
+Corsair Vengeance 32GB DDR5 6000 CL30
+G.Skill Trident Z5 32GB DDR5 6000 CL30
+Kingston Fury Beast 32GB DDR5 6000
+Team Group T-Force Delta 32GB DDR5 6000
+Corsair Vengeance 64GB DDR5 6000
+Crucial Pro 32GB DDR5 6000
+
+# --- barcodes (add EANs of specific products you want tracked exactly) ---
+4895194969662             # KLEVV FIT V 32GB DDR5-6000 CL28
+
+# --- other tech you want to watch ---
+Samsung 990 Pro 2TB
+ASUS TUF RTX 5070 Ti

@@ -44,6 +44,7 @@ never edit the pipeline to add a source. See `docs/architecture.md`.
   feeds/APIs, and rate-limit politely.
 
 ## Current status
-`v0.4` complete: second source `EbaySource` (Browse API, GTIN search) alongside
-`FeedSource`. Run `--source ebay` / `--alert discord` (both need `.env`). Sources,
-storage, and alerting are all pluggable interfaces now. See `ROADMAP.md`.
+`v0.4` complete: second source `EbaySource` (eBay Browse API) alongside
+`FeedSource`. `watchlist.txt` supports barcodes and keyword phrases. Run
+`--source ebay` / `--alert discord` (both need `.env`); `--verbose` for diagnostics. Sources, storage, and
+alerting are all pluggable interfaces. See `ROADMAP.md`.

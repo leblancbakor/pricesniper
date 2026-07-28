@@ -31,6 +31,18 @@ _BASE_URLS = {
 }
 _OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope"
 
+# Which region and currency each eBay marketplace belongs to. Used to tag
+# listings and to keep price comparisons within one currency.
+_MARKETPLACE_INFO = {
+    "EBAY_NL": (Region.EU, "EUR"),
+    "EBAY_DE": (Region.EU, "EUR"),
+    "EBAY_FR": (Region.EU, "EUR"),
+    "EBAY_IT": (Region.EU, "EUR"),
+    "EBAY_ES": (Region.EU, "EUR"),
+    "EBAY_GB": (Region.UK, "GBP"),
+    "EBAY_US": (Region.US, "USD"),
+}
+
 # eBay condition text mapped onto our enum. Unknown values fall back to UNKNOWN.
 _CONDITION_WORDS = {
     "new": Condition.NEW,
@@ -46,7 +58,11 @@ _CONDITION_WORDS = {
 
 
 def read_watchlist(path: str | Path) -> list[str]:
-    """Read a watchlist file: one EAN/GTIN per line, ``#`` comments ignored."""
+    """Read a watchlist file: one entry per line, ``#`` comments ignored.
+
+    An entry is either a barcode (all digits) or a free-text keyword phrase.
+    ``EbaySource`` searches each one the right way.
+    """
     lines = Path(path).read_text(encoding="utf-8").splitlines()
     out: list[str] = []
     for line in lines:
@@ -54,6 +70,12 @@ def read_watchlist(path: str | Path) -> list[str]:
         if code:
             out.append(code)
     return out
+
+
+def is_gtin(entry: str) -> bool:
+    """True if the entry looks like a barcode (8 to 14 digits), else it is a
+    keyword phrase. Covers EAN-8, UPC-12, EAN-13 and GTIN-14."""
+    return entry.isdigit() and 8 <= len(entry) <= 14
 
 
 class EbaySource(SourceAdapter):
@@ -65,10 +87,9 @@ class EbaySource(SourceAdapter):
         client_secret: str,
         watchlist: list[str],
         *,
-        marketplace: str = "EBAY_NL",
+        marketplaces: list[str] | None = None,
         environment: str = "production",
         name: str = "ebay",
-        region: Region = Region.EU,
         per_gtin_limit: int = 20,
     ) -> None:
         if not client_id or not client_secret:
@@ -81,13 +102,18 @@ class EbaySource(SourceAdapter):
         self.client_id = client_id
         self.client_secret = client_secret
         self.watchlist = watchlist
-        self.marketplace = marketplace
+        # One or more marketplaces, searched in turn. Listings from different
+        # marketplaces that share a barcode become cross-market arbitrage.
+        self.marketplaces = marketplaces or ["EBAY_NL"]
         self.base_url = _BASE_URLS[environment]
         self.name = name
-        self.region = region
         self.per_gtin_limit = per_gtin_limit
         self._token: str | None = None
         self._token_expiry: float = 0.0
+
+    @staticmethod
+    def _region_for(marketplace: str) -> Region:
+        return _MARKETPLACE_INFO.get(marketplace, (Region.EU, "EUR"))[0]
 
     async def fetch(self) -> list[Listing]:
         import httpx
@@ -97,11 +123,20 @@ class EbaySource(SourceAdapter):
             timeout=30.0, headers={"User-Agent": USER_AGENT}
         ) as client:
             token = await self._get_token(client)
-            for gtin in self.watchlist:
-                data = await self._search_gtin(client, token, gtin)
-                listings.extend(
-                    self._parse_search_response(data, gtin, self.name, self.region)
-                )
+            for marketplace in self.marketplaces:
+                region = self._region_for(marketplace)
+                # Tag the source with the marketplace, e.g. "ebay-de", so it is
+                # clear where each listing (and each deal) came from.
+                source = f"{self.name}-{marketplace.split('_')[-1].lower()}"
+                for entry in self.watchlist:
+                    query = {"gtin": entry} if is_gtin(entry) else {"q": entry}
+                    fallback_ean = entry if is_gtin(entry) else None
+                    data = await self._search(client, token, marketplace, query)
+                    listings.extend(
+                        self._parse_search_response(
+                            data, fallback_ean, source, region
+                        )
+                    )
         return listings
 
     async def _get_token(self, client) -> str:
@@ -127,15 +162,17 @@ class EbaySource(SourceAdapter):
         self._token_expiry = time.monotonic() + int(payload.get("expires_in", 7200))
         return self._token
 
-    async def _search_gtin(self, client, token: str, gtin: str) -> dict:
-        """Call Browse item_summary/search for one GTIN. Returns {} on failure."""
+    async def _search(self, client, token: str, marketplace: str, query: dict) -> dict:
+        """Call Browse item_summary/search on one marketplace with a query
+        (``gtin`` or ``q``). Returns {} on any non-200 so one bad query never
+        stops the run."""
         resp = await client.get(
             f"{self.base_url}/buy/browse/v1/item_summary/search",
             headers={
                 "Authorization": f"Bearer {token}",
-                "X-EBAY-C-MARKETPLACE-ID": self.marketplace,
+                "X-EBAY-C-MARKETPLACE-ID": marketplace,
             },
-            params={"gtin": gtin, "limit": self.per_gtin_limit},
+            params={**query, "limit": self.per_gtin_limit},
         )
         if resp.status_code != 200:
             return {}
@@ -143,7 +180,7 @@ class EbaySource(SourceAdapter):
 
     @staticmethod
     def _parse_search_response(
-        data: dict, searched_gtin: str, source: str, region: Region
+        data: dict, searched_gtin: str | None, source: str, region: Region
     ) -> list[Listing]:
         """Map an eBay search response into ``Listing``s (pure, so testable)."""
         listings: list[Listing] = []

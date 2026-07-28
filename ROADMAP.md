@@ -39,6 +39,12 @@ involved a real decision.
   [ADR-0005](docs/adr/0005-ebay-browse-api-for-arbitrage.md).
 - Go live: join the eBay Developers Program (free), put the app key/secret in
   `.env`, then `uv run pricesniper --source ebay --alert discord`.
+- `watchlist.txt` takes barcodes **or** keyword phrases: barcodes are precise but
+  many eBay sellers omit them, so keyword search gives far wider coverage.
+  Barcode-less listings can still be markdown deals.
+- `EBAY_MARKETPLACE` accepts several comma-separated markets (e.g.
+  `EBAY_DE,EBAY_NL`). Same-currency markets combine, so the same barcode listed
+  cheaper in one country than another becomes a cross-market deal.
 
 ### `v0.5`: thesis and context field
 - Optional short "why this matters" blurb per deal (e.g. the RAM/AI supply

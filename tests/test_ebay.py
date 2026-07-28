@@ -14,7 +14,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from pricesniper.models import Condition, Region
-from pricesniper.sources.ebay import EbaySource, read_watchlist
+from pricesniper.sources.ebay import EbaySource, is_gtin, read_watchlist
 from pricesniper.valuation import find_deals
 
 # A trimmed but realistic Browse item_summary/search response: two sellers list
@@ -104,3 +104,46 @@ def test_watchlist_loader_ignores_comments_and_blanks(tmp_path):
         encoding="utf-8",
     )
     assert read_watchlist(f) == ["0840006687894", "4711387451236"]
+
+
+def test_is_gtin_distinguishes_barcodes_from_keywords():
+    assert is_gtin("4895194969662") is True     # 13-digit EAN
+    assert is_gtin("012345678") is True          # 9 digits, still a barcode
+    assert is_gtin("5070") is False              # too short: a model number
+    assert is_gtin("RTX 5070 Ti") is False       # has letters and spaces
+
+
+def test_keyword_search_has_no_fallback_gtin():
+    # For a keyword search there is no searched barcode, so items keep only the
+    # gtin they carry themselves (here, none), and are matched by other means.
+    resp = {
+        "itemSummaries": [
+            {
+                "title": "KLEVV FIT V 32GB DDR5 6000 (used, no barcode listed)",
+                "condition": "New",
+                "price": {"value": "349.00", "currency": "EUR"},
+                "marketingPrice": {"originalPrice": {"value": "459.00", "currency": "EUR"}},
+                "itemWebUrl": "https://www.ebay.de/itm/999",
+                "seller": {"username": "private_seller"},
+            }
+        ]
+    }
+    listings = EbaySource._parse_search_response(resp, None, "ebay", Region.EU)
+    assert len(listings) == 1
+    assert listings[0].ean is None                # no barcode carried or injected
+    assert listings[0].was_price == Decimal("459.00")
+
+
+def test_marketplace_region_mapping():
+    assert EbaySource._region_for("EBAY_DE") is Region.EU
+    assert EbaySource._region_for("EBAY_NL") is Region.EU
+    assert EbaySource._region_for("EBAY_GB") is Region.UK
+    assert EbaySource._region_for("EBAY_US") is Region.US
+
+
+def test_multiple_marketplaces_are_stored():
+    src = EbaySource(
+        client_id="x", client_secret="y", watchlist=[],
+        marketplaces=["EBAY_DE", "EBAY_NL"],
+    )
+    assert src.marketplaces == ["EBAY_DE", "EBAY_NL"]

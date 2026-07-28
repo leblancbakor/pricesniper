@@ -25,33 +25,41 @@ def find_deals(
     listings: list[Listing],
     min_gap_pct: float = DEFAULT_MIN_GAP_PCT,
 ) -> list[Deal]:
-    """Scan listings and return those that clear the gap threshold, best first."""
+    """Scan listings and return those that clear the gap threshold, best first.
+
+    Listings that share a barcode are compared against each other (cross-seller
+    arbitrage). Listings with no identity (common in eBay keyword results) can
+    still be deals through their own markdown, since that signal needs no comps.
+    """
     groups = group_by_identity(listings)
     deals: list[Deal] = []
 
-    for group in groups.values():
-        for listing in group:
-            others = [x for x in group if x is not listing]
-            reference, reason, comps = _best_reference(listing, others)
-            if reference is None or reference <= listing.price:
-                continue
+    for listing in listings:
+        # A grouped listing is compared with its same-barcode peers; a lone or
+        # barcode-less listing has no peers, so only its markdown can flag it.
+        peers = groups.get(listing.identity or "", [])
+        others = [x for x in peers if x is not listing]
 
-            gap_abs = reference - listing.price
-            gap_pct = float(gap_abs / reference)
-            if gap_pct < min_gap_pct:
-                continue
+        reference, reason, comps = _best_reference(listing, others)
+        if reference is None or reference <= listing.price:
+            continue
 
-            deals.append(
-                Deal(
-                    listing=listing,
-                    reference_price=reference,
-                    gap_abs=gap_abs,
-                    gap_pct=gap_pct,
-                    priority=_priority_for(gap_pct, gap_abs),
-                    reason=reason,
-                    comps=comps,
-                )
+        gap_abs = reference - listing.price
+        gap_pct = float(gap_abs / reference)
+        if gap_pct < min_gap_pct:
+            continue
+
+        deals.append(
+            Deal(
+                listing=listing,
+                reference_price=reference,
+                gap_abs=gap_abs,
+                gap_pct=gap_pct,
+                priority=_priority_for(gap_pct, gap_abs),
+                reason=reason,
+                comps=comps,
             )
+        )
 
     # Biggest opportunities first.
     deals.sort(key=lambda d: d.gap_pct, reverse=True)
@@ -69,8 +77,12 @@ def _best_reference(
     if listing.was_price is not None and listing.was_price > listing.price:
         candidates.append((listing.was_price, "marked down from original price", 0))
 
-    # Signal 2: what other sellers charge for the same item.
-    comp_prices = [o.price for o in others if o.in_stock]
+    # Signal 2: what other sellers charge for the same item. Only compare
+    # like-for-like currencies, so a EUR listing is never judged against a GBP
+    # one when multiple marketplaces are searched at once.
+    comp_prices = [
+        o.price for o in others if o.in_stock and o.currency == listing.currency
+    ]
     if comp_prices:
         ref = median(comp_prices)
         label = f"cheaper than {len(comp_prices)} other seller(s)"
