@@ -73,8 +73,14 @@ def _best_reference(
     """Pick the reference price that implies the largest, still-credible gap."""
     candidates: list[tuple[Decimal, str, int]] = []
 
-    # Signal 1: the store's own markdown.
-    if listing.was_price is not None and listing.was_price > listing.price:
+    # Signal 1: the store's own markdown, but only from sources we trust for it.
+    # A marketplace seller can fake a strikethrough, so those are ignored here
+    # and only cross-seller comparison (signal 2) can flag them.
+    if (
+        listing.trust_markdown
+        and listing.was_price is not None
+        and listing.was_price > listing.price
+    ):
         candidates.append((listing.was_price, "marked down from original price", 0))
 
     # Signal 2: what other sellers charge for the same item. Only compare

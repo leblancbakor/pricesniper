@@ -82,6 +82,11 @@ class Listing(BaseModel):
     seller: str
     in_stock: bool = True
 
+    # Whether this listing's ``was_price`` markdown can be believed. Retailer
+    # feeds report genuine original prices; open marketplaces let a single seller
+    # inflate a strikethrough to fake a discount, so those are not trusted.
+    trust_markdown: bool = True
+
     # --- provenance ---
     source: str  # which adapter produced this
     region: Region

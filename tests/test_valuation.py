@@ -82,3 +82,49 @@ def test_different_currencies_are_not_compared():
     # No markdown on either, so the only possible deal would be a bogus
     # cross-currency comparison, which the currency guard must prevent.
     assert find_deals([eur, gbp]) == []
+
+
+def test_untrusted_single_seller_markdown_is_not_a_deal():
+    # The exact false-positive from live eBay: one seller inflates the original
+    # price to fake a 47% discount, with no other seller to corroborate it.
+    from decimal import Decimal
+
+    from pricesniper.models import Condition, Listing, Region
+
+    faked = Listing(
+        ean=None,
+        title="Team T-Force Delta 32GB DDR5 6000 (fake markdown)",
+        condition=Condition.NEW,
+        price=Decimal("711.10"),
+        was_price=Decimal("1351.10"),
+        currency="EUR",
+        url="https://www.ebay.nl/itm/1",
+        seller="retail_king",
+        source="ebay-nl",
+        region=Region.EU,
+        trust_markdown=False,
+    )
+    assert find_deals([faked]) == []
+
+
+def test_trusted_feed_markdown_is_still_a_deal():
+    # A retailer feed markdown stays trustworthy (trust_markdown defaults True).
+    from decimal import Decimal
+
+    from pricesniper.models import Condition, Listing, Region
+
+    real = Listing(
+        ean="1111111111116",
+        title="Genuine clearance from a retailer feed",
+        condition=Condition.NEW,
+        price=Decimal("129.00"),
+        was_price=Decimal("189.00"),
+        currency="EUR",
+        url="https://shop.example/x",
+        seller="Alternate.nl",
+        source="feed",
+        region=Region.EU,
+    )
+    deals = find_deals([real])
+    assert len(deals) == 1
+    assert deals[0].reference_price == Decimal("189.00")

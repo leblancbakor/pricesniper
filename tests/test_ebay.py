@@ -147,3 +147,52 @@ def test_multiple_marketplaces_are_stored():
         marketplaces=["EBAY_DE", "EBAY_NL"],
     )
     assert src.marketplaces == ["EBAY_DE", "EBAY_NL"]
+
+
+def test_identity_recovered_from_top_level_fields():
+    detail = {"gtin": "4895194969662", "mpn": "KD5AGUA80-60A380C"}
+    gtin, mpn = EbaySource._identity_from_item(detail)
+    assert gtin == "4895194969662"
+    assert mpn == "KD5AGUA80-60A380C"
+
+
+def test_identity_recovered_from_localized_aspects():
+    # Sellers often put the barcode in the free-form item specifics instead.
+    detail = {
+        "localizedAspects": [
+            {"name": "Brand", "value": "KLEVV"},
+            {"name": "EAN", "value": "4895194969662"},
+            {"name": "MPN", "value": "KD5AGUA80-60A380C"},
+        ]
+    }
+    gtin, mpn = EbaySource._identity_from_item(detail)
+    assert gtin == "4895194969662"
+    assert mpn == "KD5AGUA80-60A380C"
+
+
+def test_identity_absent_returns_none():
+    gtin, mpn = EbaySource._identity_from_item({"localizedAspects": []})
+    assert gtin is None and mpn is None
+
+
+def test_recovery_enriches_summaries_and_respects_the_cap():
+    import asyncio
+
+    src = EbaySource(
+        client_id="x", client_secret="y", watchlist=[], max_lookups=2
+    )
+
+    # Stub the network call: pretend eBay detail always has this barcode.
+    async def fake_get_item(client, token, marketplace, item_id):
+        return {"gtin": f"111111111111{item_id[-1]}"}
+
+    src._get_item = fake_get_item  # type: ignore[assignment]
+
+    summaries = [
+        {"itemId": f"v1|{i}|0", "title": f"item {i}"} for i in range(5)
+    ]
+    asyncio.run(src._recover_barcodes(None, "tok", "EBAY_NL", summaries))
+
+    recovered = [s for s in summaries if s.get("gtin")]
+    assert len(recovered) == 2  # cap of 2 respected, not all 5
+    assert src._lookups_done == 2

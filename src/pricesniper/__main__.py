@@ -44,6 +44,7 @@ def _make_source(kind: str) -> SourceAdapter:
             watchlist=read_watchlist(WATCHLIST_PATH),
             marketplaces=marketplaces,
             environment=os.getenv("EBAY_ENV", "production"),
+            max_lookups=int(os.getenv("EBAY_MAX_LOOKUPS", "60")),
         )
     # Default: the bundled sample feed (swap the path for a real feed URL).
     return FeedSource(

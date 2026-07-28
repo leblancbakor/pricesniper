@@ -13,6 +13,7 @@ docs/adr/0005-ebay-browse-api-for-arbitrage.md.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import time
 from decimal import Decimal, InvalidOperation
@@ -91,6 +92,8 @@ class EbaySource(SourceAdapter):
         environment: str = "production",
         name: str = "ebay",
         per_gtin_limit: int = 20,
+        recover_barcodes: bool = True,
+        max_lookups: int = 60,
     ) -> None:
         if not client_id or not client_secret:
             raise ValueError(
@@ -108,6 +111,12 @@ class EbaySource(SourceAdapter):
         self.base_url = _BASE_URLS[environment]
         self.name = name
         self.per_gtin_limit = per_gtin_limit
+        # Keyword search summaries often omit the barcode even when the full
+        # listing has one. Recovery fetches item detail to fill it in, so
+        # cross-seller matching can work. Capped to protect the API quota.
+        self.recover_barcodes = recover_barcodes
+        self.max_lookups = max_lookups
+        self._lookups_done = 0
         self._token: str | None = None
         self._token_expiry: float = 0.0
 
@@ -118,6 +127,7 @@ class EbaySource(SourceAdapter):
     async def fetch(self) -> list[Listing]:
         import httpx
 
+        self._lookups_done = 0
         listings: list[Listing] = []
         async with httpx.AsyncClient(
             timeout=30.0, headers={"User-Agent": USER_AGENT}
@@ -132,12 +142,84 @@ class EbaySource(SourceAdapter):
                     query = {"gtin": entry} if is_gtin(entry) else {"q": entry}
                     fallback_ean = entry if is_gtin(entry) else None
                     data = await self._search(client, token, marketplace, query)
+                    summaries = data.get("itemSummaries", [])
+                    if self.recover_barcodes:
+                        await self._recover_barcodes(
+                            client, token, marketplace, summaries
+                        )
                     listings.extend(
                         self._parse_search_response(
-                            data, fallback_ean, source, region
+                            {"itemSummaries": summaries},
+                            fallback_ean,
+                            source,
+                            region,
                         )
                     )
         return listings
+
+    async def _recover_barcodes(self, client, token, marketplace, summaries) -> None:
+        """Fill in missing barcodes by fetching item detail for summaries that
+        lack one, up to the per-run cap. Enriches the summary dicts in place."""
+        remaining = self.max_lookups - self._lookups_done
+        if remaining <= 0:
+            return
+        need = [
+            s
+            for s in summaries
+            if not s.get("gtin") and not s.get("mpn") and s.get("itemId")
+        ][:remaining]
+        if not need:
+            return
+
+        # Bound concurrency so we stay polite to the API.
+        sem = asyncio.Semaphore(5)
+
+        async def one(summary: dict) -> None:
+            async with sem:
+                detail = await self._get_item(
+                    client, token, marketplace, summary["itemId"]
+                )
+            gtin, mpn = self._identity_from_item(detail)
+            if gtin:
+                summary["gtin"] = gtin
+            if mpn and not summary.get("mpn"):
+                summary["mpn"] = mpn
+
+        await asyncio.gather(*(one(s) for s in need))
+        self._lookups_done += len(need)
+
+    async def _get_item(self, client, token: str, marketplace: str, item_id: str) -> dict:
+        """Fetch full item detail for one listing. Returns {} on failure."""
+        resp = await client.get(
+            f"{self.base_url}/buy/browse/v1/item/{item_id}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "X-EBAY-C-MARKETPLACE-ID": marketplace,
+            },
+        )
+        if resp.status_code != 200:
+            return {}
+        return resp.json()
+
+    @staticmethod
+    def _identity_from_item(detail: dict) -> tuple[str | None, str | None]:
+        """Pull a barcode and MPN out of an item-detail response (pure).
+
+        Checks the top-level ``gtin``/``mpn`` fields first, then the item's
+        localized aspects, where sellers often put EAN/MPN as free-form specs.
+        """
+        gtin = detail.get("gtin")
+        mpn = detail.get("mpn")
+        for aspect in detail.get("localizedAspects", []):
+            name = (aspect.get("name") or "").strip().lower()
+            value = (aspect.get("value") or "").strip()
+            if not value:
+                continue
+            if gtin is None and name in {"ean", "gtin", "upc", "barcode"}:
+                gtin = value
+            elif mpn is None and name in {"mpn", "herstellernummer", "part number"}:
+                mpn = value
+        return gtin, mpn
 
     async def _get_token(self, client) -> str:
         """Fetch (and cache) an application access token."""
@@ -211,6 +293,9 @@ class EbaySource(SourceAdapter):
                         image_url=(item.get("image") or {}).get("imageUrl"),
                         seller=(item.get("seller") or {}).get("username", "ebay"),
                         in_stock=True,
+                        # Marketplace "original price" is seller-supplied and
+                        # easily faked, so we never treat it as a deal on its own.
+                        trust_markdown=False,
                         source=source,
                         region=region,
                     )

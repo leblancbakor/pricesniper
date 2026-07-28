@@ -17,3 +17,5 @@ Use [`template.md`](template.md) to start a new one.
 - [0003: SQLite via the standard library, behind a Store interface](0003-sqlite-behind-a-store-interface.md)
 - [0004: Alert via Discord's REST API, not a gateway bot](0004-discord-via-rest-not-a-gateway-bot.md)
 - [0005: eBay Browse API for cross-seller arbitrage](0005-ebay-browse-api-for-arbitrage.md)
+- [0006: Do not trust single-seller markdowns](0006-do-not-trust-single-seller-markdowns.md)
+- [0007: Recover missing barcodes from item detail](0007-recover-missing-barcodes-from-item-detail.md)
