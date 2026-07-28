@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import sqlite3
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -96,6 +97,13 @@ class SQLiteStore(Store):
                 priority   TEXT NOT NULL,
                 alerted_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS barcode_cache (
+                item_id     TEXT PRIMARY KEY,
+                gtin        TEXT,   -- NULL means "looked up, none found"
+                mpn         TEXT,
+                resolved_at TEXT NOT NULL
+            );
             """
         )
         self._db.commit()
@@ -144,6 +152,30 @@ class SQLiteStore(Store):
             (identity,),
         ).fetchall()
         return [(Decimal(price), seen_at) for price, seen_at in rows]
+
+    # --- barcode cache (satisfies the BarcodeCache protocol used by EbaySource) ---
+
+    def get_cached_identity(
+        self, item_id: str
+    ) -> tuple[str | None, str | None] | None:
+        """Return the cached ``(gtin, mpn)`` for an item, or ``None`` if we have
+        never looked it up. A cached ``(None, None)`` means "looked, found none",
+        which still spares us a repeat network call."""
+        row = self._db.execute(
+            "SELECT gtin, mpn FROM barcode_cache WHERE item_id = ?", (item_id,)
+        ).fetchone()
+        return None if row is None else (row[0], row[1])
+
+    def cache_identity(
+        self, item_id: str, gtin: str | None, mpn: str | None
+    ) -> None:
+        """Remember an item's recovered identity (including a negative result)."""
+        self._db.execute(
+            "INSERT OR REPLACE INTO barcode_cache "
+            "(item_id, gtin, mpn, resolved_at) VALUES (?, ?, ?, ?)",
+            (item_id, gtin, mpn, datetime.now(UTC).isoformat()),
+        )
+        self._db.commit()
 
     def close(self) -> None:
         self._db.close()

@@ -18,9 +18,24 @@ import base64
 import time
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from typing import Protocol
 
 from ..models import Condition, Listing, Region
 from .base import SourceAdapter
+
+
+class BarcodeCache(Protocol):
+    """The slice of storage the eBay source needs: remember and recall the
+    identity recovered for an item, so repeat runs skip the network lookup.
+    ``SQLiteStore`` satisfies this structurally."""
+
+    def get_cached_identity(
+        self, item_id: str
+    ) -> tuple[str | None, str | None] | None: ...
+
+    def cache_identity(
+        self, item_id: str, gtin: str | None, mpn: str | None
+    ) -> None: ...
 
 USER_AGENT = "PriceSniper/0.4 (+https://github.com/leblancbakor/pricesniper)"
 
@@ -94,6 +109,7 @@ class EbaySource(SourceAdapter):
         per_gtin_limit: int = 20,
         recover_barcodes: bool = True,
         max_lookups: int = 60,
+        cache: BarcodeCache | None = None,
     ) -> None:
         if not client_id or not client_secret:
             raise ValueError(
@@ -116,6 +132,7 @@ class EbaySource(SourceAdapter):
         # cross-seller matching can work. Capped to protect the API quota.
         self.recover_barcodes = recover_barcodes
         self.max_lookups = max_lookups
+        self.cache = cache
         self._lookups_done = 0
         self._token: str | None = None
         self._token_expiry: float = 0.0
@@ -158,17 +175,30 @@ class EbaySource(SourceAdapter):
         return listings
 
     async def _recover_barcodes(self, client, token, marketplace, summaries) -> None:
-        """Fill in missing barcodes by fetching item detail for summaries that
-        lack one, up to the per-run cap. Enriches the summary dicts in place."""
-        remaining = self.max_lookups - self._lookups_done
-        if remaining <= 0:
-            return
-        need = [
+        """Fill in missing barcodes for summaries that lack one. Cached items are
+        applied for free; only genuinely new items cost a network lookup and count
+        against the per-run cap. Newly resolved items are written to the cache, so
+        coverage accumulates across runs. Enriches summary dicts in place."""
+        candidates = [
             s
             for s in summaries
             if not s.get("gtin") and not s.get("mpn") and s.get("itemId")
-        ][:remaining]
-        if not need:
+        ]
+
+        # Apply anything we already know; queue the rest for a lookup.
+        to_fetch: list[dict] = []
+        for s in candidates:
+            cached = (
+                self.cache.get_cached_identity(s["itemId"]) if self.cache else None
+            )
+            if cached is not None:
+                self._apply_identity(s, cached[0], cached[1])
+            else:
+                to_fetch.append(s)
+
+        remaining = self.max_lookups - self._lookups_done
+        to_fetch = to_fetch[:remaining]
+        if not to_fetch:
             return
 
         # Bound concurrency so we stay polite to the API.
@@ -180,13 +210,19 @@ class EbaySource(SourceAdapter):
                     client, token, marketplace, summary["itemId"]
                 )
             gtin, mpn = self._identity_from_item(detail)
-            if gtin:
-                summary["gtin"] = gtin
-            if mpn and not summary.get("mpn"):
-                summary["mpn"] = mpn
+            self._apply_identity(summary, gtin, mpn)
+            if self.cache:
+                self.cache.cache_identity(summary["itemId"], gtin, mpn)
 
-        await asyncio.gather(*(one(s) for s in need))
-        self._lookups_done += len(need)
+        await asyncio.gather(*(one(s) for s in to_fetch))
+        self._lookups_done += len(to_fetch)
+
+    @staticmethod
+    def _apply_identity(summary: dict, gtin: str | None, mpn: str | None) -> None:
+        if gtin:
+            summary["gtin"] = gtin
+        if mpn and not summary.get("mpn"):
+            summary["mpn"] = mpn
 
     async def _get_item(self, client, token: str, marketplace: str, item_id: str) -> dict:
         """Fetch full item detail for one listing. Returns {} on failure."""

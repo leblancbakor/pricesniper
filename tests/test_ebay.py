@@ -196,3 +196,44 @@ def test_recovery_enriches_summaries_and_respects_the_cap():
     recovered = [s for s in summaries if s.get("gtin")]
     assert len(recovered) == 2  # cap of 2 respected, not all 5
     assert src._lookups_done == 2
+
+
+def test_cached_items_cost_no_lookup_and_new_ones_are_cached():
+    import asyncio
+
+    class FakeCache:
+        def __init__(self):
+            self.data = {"v1|known|0": ("4895194969662", None)}
+
+        def get_cached_identity(self, item_id):
+            return self.data.get(item_id)
+
+        def cache_identity(self, item_id, gtin, mpn):
+            self.data[item_id] = (gtin, mpn)
+
+    cache = FakeCache()
+    src = EbaySource(
+        client_id="x", client_secret="y", watchlist=[], max_lookups=60, cache=cache
+    )
+
+    calls = []
+
+    async def fake_get_item(client, token, marketplace, item_id):
+        calls.append(item_id)
+        return {"gtin": "9999999999999"}
+
+    src._get_item = fake_get_item  # type: ignore[assignment]
+
+    summaries = [
+        {"itemId": "v1|known|0", "title": "already cached"},
+        {"itemId": "v1|new|0", "title": "needs a lookup"},
+    ]
+    asyncio.run(src._recover_barcodes(None, "tok", "EBAY_NL", summaries))
+
+    # The cached item was applied without any network call.
+    assert calls == ["v1|new|0"]
+    assert summaries[0]["gtin"] == "4895194969662"
+    # The new item got looked up and written back to the cache.
+    assert summaries[1]["gtin"] == "9999999999999"
+    assert cache.data["v1|new|0"] == ("9999999999999", None)
+    assert src._lookups_done == 1  # only the uncached one counted

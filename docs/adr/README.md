@@ -19,3 +19,4 @@ Use [`template.md`](template.md) to start a new one.
 - [0005: eBay Browse API for cross-seller arbitrage](0005-ebay-browse-api-for-arbitrage.md)
 - [0006: Do not trust single-seller markdowns](0006-do-not-trust-single-seller-markdowns.md)
 - [0007: Recover missing barcodes from item detail](0007-recover-missing-barcodes-from-item-detail.md)
+- [0008: Persistent barcode cache](0008-persistent-barcode-cache.md)

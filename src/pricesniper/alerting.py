@@ -28,7 +28,7 @@ EMBED_COLOUR = 0x7AE715
 
 _PRIORITY_COLOUR = {
     Priority.MAJOR: 0xE74C3C,  # red
-    Priority.SOLID: 0x7AE715,  # green
+    Priority.SOLID: 0x2ECC71,  # green
     Priority.MINOR: 0x95A5A6,  # grey
 }
 
@@ -134,7 +134,7 @@ class DiscordAlerter(Alerter):
         embed: dict = {
             "title": item.title[:256],  # Discord caps embed titles at 256 chars
             "url": item.url,  # makes the title clickable through to the product
-            "color": _PRIORITY_COLOUR[deal.priority],
+            "color": EMBED_COLOUR,
             "description": f"**Save {_money(cur, deal.gap_abs)} ({pct}%)**\n{deal.reason}",
             "fields": [
                 {"name": "Price", "value": _money(cur, item.price), "inline": True},

@@ -32,8 +32,9 @@ from .valuation import DEFAULT_MIN_GAP_PCT, find_deals
 WATCHLIST_PATH = "watchlist.txt"
 
 
-def _make_source(kind: str) -> SourceAdapter:
-    """Build the chosen data source. eBay reads credentials from .env."""
+def _make_source(kind: str, store: SQLiteStore) -> SourceAdapter:
+    """Build the chosen data source. eBay reads credentials from .env and uses
+    the store as a persistent barcode cache."""
     if kind == "ebay":
         load_dotenv()
         raw_markets = os.getenv("EBAY_MARKETPLACE", "EBAY_NL")
@@ -45,6 +46,7 @@ def _make_source(kind: str) -> SourceAdapter:
             marketplaces=marketplaces,
             environment=os.getenv("EBAY_ENV", "production"),
             max_lookups=int(os.getenv("EBAY_MAX_LOOKUPS", "60")),
+            cache=store,
         )
     # Default: the bundled sample feed (swap the path for a real feed URL).
     return FeedSource(
@@ -108,8 +110,8 @@ def _print_scan(listings: list) -> None:
 
 
 async def _run(alert_kind: str, source_kind: str, verbose: bool) -> None:
-    source = _make_source(source_kind)
     store = SQLiteStore()
+    source = _make_source(source_kind, store)
     alerter = _make_alerter(alert_kind)
 
     listings = await source.fetch()

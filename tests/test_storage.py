@@ -71,3 +71,15 @@ def test_history_keeps_growing_across_runs():
 
     # One product observed three times => three history rows.
     assert len(store.price_history("0195949999123")) == 3
+
+
+def test_barcode_cache_round_trip_and_negative_result():
+    store = _store()
+    # Unknown item: not cached yet.
+    assert store.get_cached_identity("v1|1|0") is None
+    # A positive result.
+    store.cache_identity("v1|1|0", "4895194969662", "MPN-1")
+    assert store.get_cached_identity("v1|1|0") == ("4895194969662", "MPN-1")
+    # A negative result is still cached, so we do not re-look-up.
+    store.cache_identity("v1|2|0", None, None)
+    assert store.get_cached_identity("v1|2|0") == (None, None)

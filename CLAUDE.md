@@ -21,7 +21,7 @@ never edit the pipeline to add a source. See `docs/architecture.md`.
 - `src/pricesniper/sources/ebay.py`: `EbaySource` (Browse API, GTIN search).
 - `src/pricesniper/matching.py`: group by identity (EAN/UPC/MPN).
 - `src/pricesniper/valuation.py`: reference price, gap, priority.
-- `src/pricesniper/storage.py`: `Store` interface + `SQLiteStore` (history + dedupe).
+- `src/pricesniper/storage.py`: `Store` + `SQLiteStore` (history, dedupe, barcode cache).
 - `src/pricesniper/alerting.py`: `Alerter` interface + `ConsoleAlerter`, `DiscordAlerter`.
 - `docs/adr/`: one Markdown file per significant decision.
 
